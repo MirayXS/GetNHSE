@@ -80,9 +80,23 @@ try {
 			{
 				var data = JSON.parse(this.response);
 				if (request.status >= 200 && request.status < 400) {
-					const id = data.value[0].id;
-					const pc = data.value[0].definition.project.id;
-					const timestamp = new Date(data.value[0].finishTime);
+					// Filter builds to only include those from main or master branch
+					const mainBranchBuilds = data.value.filter(build => {
+						const branch = build.sourceBranch;
+						return branch === 'refs/heads/main' || branch === 'refs/heads/master';
+					});
+					
+					if (mainBranchBuilds.length === 0) {
+						document.getElementById("loader").innerHTML ='No builds found from main or master branch';
+						timedOut = false;
+						return;
+					}
+					
+					// Use the latest build from main/master branch
+					const latestBuild = mainBranchBuilds[0];
+					const id = latestBuild.id;
+					const pc = latestBuild.definition.project.id;
+					const timestamp = new Date(latestBuild.finishTime);
 					const timediff = getBuildTimeDifferenceString(timestamp);
 					document.getElementById("buildTime").innerHTML =`Build no. ${id} built ${timediff}.<br>${timestamp}`;	
 					document.getElementById("loader").innerHTML =`Click below to download the latest version of ${project}.`;
